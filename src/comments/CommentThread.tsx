@@ -47,10 +47,22 @@ export type CommentThreadProps = {
   /** Admins may remove anyone's comment, for moderation. */
   currentUserIsAdmin?: boolean
   /**
-   * False when this surface is not registered for comments yet. The component
-   * renders nothing, so later rollout phases need no code change here.
+   * Whether this surface is registered for comments.
+   *
+   *   `false`     — definitively not registered. Renders NOTHING, which is what
+   *                 lets a later rollout phase drop the thread into a screen
+   *                 before the database knows about that surface.
+   *   `true`      — registered. Render the thread.
+   *   `undefined` — not yet known, i.e. still loading. Renders a loading state.
+   *
+   * TRI-STATE ON PURPOSE. This was a plain boolean defaulting to false, which
+   * meant any failure to load left it false and the whole section rendered
+   * nothing at all — no error, no spinner, no empty box. A broken comment thread
+   * was indistinguishable from a deliberately disabled one, and that is how a
+   * completely broken feature reached Staging looking fine. Never let a failure
+   * render as absence.
    */
-  enabled?: boolean
+  enabled?: boolean | undefined
   loading?: boolean
   /** A message to show above the composer, e.g. a failed save. */
   error?: string | null
@@ -72,6 +84,8 @@ export type CommentThreadProps = {
   ) => void | Promise<void>
   onDelete?: (commentId: string) => void | Promise<void>
   onSearchMentions?: (query: string) => Promise<MentionCandidate[]>
+  /** Offered alongside an error so a transient failure is recoverable. */
+  onRetry?: () => void
   className?: string
 }
 
@@ -87,6 +101,7 @@ export function CommentThread({
   onEdit,
   onDelete,
   onSearchMentions,
+  onRetry,
   className,
 }: CommentThreadProps) {
   const [replyingTo, setReplyingTo] = React.useState<string | null>(null)
@@ -101,7 +116,49 @@ export function CommentThread({
     return () => window.clearInterval(timer)
   }, [])
 
-  if (!enabled) return null
+  // An error is ALWAYS shown, even before we know whether the surface is
+  // registered — otherwise a failed load is invisible.
+  if (error && !enabled) {
+    return (
+      <section className={cn("space-y-2", className)} aria-label="Comments">
+        <h3 className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
+          Comments
+        </h3>
+        <p
+          role="alert"
+          className="rounded-md border border-[var(--color-danger)]/30 bg-[var(--color-danger)]/10 px-3 py-2 text-xs text-[var(--color-danger)]"
+        >
+          {error}
+        </p>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="text-xs font-medium text-[var(--color-text-muted)] underline hover:text-[var(--color-text)]"
+          >
+            Try again
+          </button>
+        )}
+      </section>
+    )
+  }
+
+  // Still finding out whether this surface takes comments. Say so rather than
+  // rendering nothing, which would look identical to "not available".
+  if (enabled === undefined) {
+    return (
+      <section className={cn("space-y-2", className)} aria-label="Comments">
+        <h3 className="text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase">
+          Comments
+        </h3>
+        <p className="text-sm text-[var(--color-text-muted)]">Loading comments…</p>
+      </section>
+    )
+  }
+
+  // Definitively not registered for comments. This is the only case that
+  // renders nothing, and it is deliberate.
+  if (enabled === false) return null
 
   const topLevel = comments.filter((comment) => !comment.parentCommentId)
   const repliesByParent = new Map<string, CommentRecord[]>()
