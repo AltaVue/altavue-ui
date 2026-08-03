@@ -1,8 +1,8 @@
 {
   "name": "@comet/ui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Shared internal UI for the COMET platform — starting with the field-level tooltip help system (tooltip primitives, FieldHelp / FieldLabel, FieldHelpProvider).",
+  "description": "Shared internal UI for the AltaVue platform — the field-level tooltip help system (tooltip primitives, FieldHelp / FieldLabel, FieldHelpProvider) plus the comments and @mentions components (rich-text composer, thread, mention picker, and the server-side document validator).",
   "license": "UNLICENSED",
   "type": "module",
   "main": "./src/index.ts",
@@ -20,10 +20,18 @@
     "radix-ui": ">=1.4"
   },
   "dependencies": {
+    "@tiptap/extension-mention": "^3.29.2",
+    "@tiptap/pm": "^3.29.2",
+    "@tiptap/react": "^3.29.2",
+    "@tiptap/starter-kit": "^3.29.2",
     "clsx": "^2.1.1"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "radix-ui": "^1.4.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "typescript": "^5"
   }
 }
