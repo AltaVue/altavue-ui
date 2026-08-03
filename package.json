@@ -1,6 +1,6 @@
 {
   "name": "@comet/ui",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Shared internal UI for the AltaVue platform — the field-level tooltip help system (tooltip primitives, FieldHelp / FieldLabel, FieldHelpProvider) plus the comments and @mentions components (rich-text composer, thread, mention picker, and the server-side document validator).",
   "license": "UNLICENSED",

@@ -3,15 +3,27 @@
 import * as React from "react"
 
 import { cn } from "../lib/cn"
-import type { CommentDoc, CommentMark, CommentNode } from "./doc"
+import { SAFE_HREF, type CommentDoc, type CommentMark, type CommentNode } from "./doc"
 
 /**
  * CommentBody — renders a stored comment document as React elements.
  *
- * There is no `dangerouslySetInnerHTML` anywhere in this file, and there never
- * should be. The document has already been rebuilt from an allow-list by
- * `validateCommentDoc` on the server; this component is the second half of that
- * guarantee. Anything it does not recognise renders as nothing.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * TREAT THE STORED DOCUMENT AS UNTRUSTED.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * An earlier version of this file assumed `validateCommentDoc` had already run
+ * on anything it was given. That assumption was wrong and it was a real hole.
+ * The insert grant on the comments table is table-level, so any signed-in user
+ * can write `body_json` straight to the REST API without going near the
+ * validator — and the Customer Portal already writes that way. So this
+ * component re-checks anything dangerous itself rather than trusting the store.
+ *
+ * Two rules hold here unconditionally:
+ *   1. No `dangerouslySetInnerHTML`, ever. Unknown node and mark types render
+ *      as nothing rather than as raw content.
+ *   2. Every link target is re-tested against SAFE_HREF at render time, so a
+ *      stored `javascript:` or `data:` URL renders as inert text, not a link.
  *
  * Theme contract: uses the standard AltaVue tokens — --color-text,
  * --color-text-muted, --color-border, --color-muted, --color-accent.
@@ -64,11 +76,16 @@ function applyMarks(
       case "link": {
         const href = mark.attrs?.href
         if (typeof href !== "string") break
+        // Re-check the scheme HERE. The validator checks it on the way in, but
+        // the way in can be bypassed, so this is the check that actually holds.
+        // A stored javascript: or data: URL renders as plain text — the content
+        // is still shown, it just is not clickable.
+        if (!SAFE_HREF.test(href.trim())) break
         // target and rel are forced here, never read from the document.
         wrapped = (
           <a
             key={`${key}-a`}
-            href={href}
+            href={href.trim()}
             target="_blank"
             rel="noopener noreferrer nofollow"
             className="text-[var(--color-accent)] underline decoration-[var(--color-accent)]/40 underline-offset-2 hover:decoration-[var(--color-accent)]"

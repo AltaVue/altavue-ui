@@ -2,23 +2,39 @@
  * Comment document model, validation, and plain-text extraction.
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * THIS FILE IS THE SECURITY BOUNDARY FOR COMMENTS.
+ * THIS FILE IS ONE OF TWO DEFENCES. IT IS NOT THE ONLY ONE, AND IT CAN BE
+ * BYPASSED ENTIRELY.
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * A comment arrives from the browser as a structured TipTap document (JSON),
- * not as HTML. Before it is stored, `validateCommentDoc` walks the whole
- * document and rebuilds it from scratch, keeping only node types, mark types,
- * and attributes that appear on the allow-lists below. Anything unrecognised is
- * dropped rather than sanitised — there is no "clean it up and hope" path.
+ * A comment arrives as a structured TipTap document (JSON), never as HTML.
+ * `validateCommentDoc` walks it and rebuilds it from scratch, keeping only the
+ * node types, mark types and attributes on the allow-lists below. Anything
+ * unrecognised is dropped rather than sanitised — there is no "clean it up and
+ * hope" path.
  *
- * On the way back out, `CommentBody` renders the stored JSON as React elements.
- * Nothing ever touches `dangerouslySetInnerHTML`. That combination is why
- * AltaVue needs no HTML sanitiser library: untrusted markup never exists in the
- * first place. The Customer Portal's KbMarkdown component already uses the same
- * model successfully.
+ * BE CLEAR ABOUT WHAT THIS DOES NOT GUARANTEE. An earlier version of this
+ * comment claimed the validator meant untrusted content "never exists in the
+ * first place". That was wrong, and the security review caught it. The insert
+ * grant on the comments table is table-level, so any signed-in user can write
+ * `body_json` straight to the REST API without this function ever running — and
+ * the Customer Portal does write that way. So:
  *
- * This module is deliberately free of React and of any browser API, so the
- * server action can import and run it in Node.
+ *   * Running this on the server before storing is necessary but NOT sufficient.
+ *   * `CommentBody` must, and does, re-check anything dangerous at render time,
+ *     in particular link schemes. That is the check that actually holds.
+ *   * The database bounds size and derives the fields that matter in
+ *     `comments_normalize()`, which every writer goes through.
+ *
+ * What genuinely does hold: comments render as React elements and nothing ever
+ * touches `dangerouslySetInnerHTML`, so stored markup cannot become live markup.
+ * That is why no HTML sanitiser library is needed — not because the input is
+ * guaranteed clean.
+ *
+ * Making validation unavoidable (all writes through a database function) needs
+ * the Customer Portal changed and is Phase 6 work.
+ *
+ * This module is deliberately free of React and of any browser API, so a server
+ * action can import and run it in Node.
  */
 
 // ── Document shape ──────────────────────────────────────────────────────────
@@ -98,8 +114,14 @@ const ALLOWED_MARK_ATTRS: Record<string, readonly string[]> = {
   link: ["href"],
 }
 
-/** Links must be plain web links. No javascript:, data:, mailto:, or file:. */
-const SAFE_HREF = /^https?:\/\//i
+/**
+ * Links must be plain web links. No javascript:, data:, mailto:, or file:.
+ *
+ * Exported because the RENDERER must re-test it. This check on the way in is not
+ * sufficient on its own: the comments table grants insert at table level, so a
+ * client can store a document without this function ever running.
+ */
+export const SAFE_HREF = /^https?:\/\//i
 
 // ── Limits ──────────────────────────────────────────────────────────────────
 // A comment is a comment. These caps stop a single post from becoming a
@@ -233,7 +255,13 @@ export function validateCommentDoc(input: unknown): ValidationResult {
       if (typeof raw.text !== "string") return null
       // Strip control characters other than tab and newline. These have caused
       // real problems before, notably in email subject lines.
-      const text = raw.text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+      // Strip control characters (a newline in a future email subject is a
+      // header-injection risk) and the invisible characters used to disguise
+      // text: bidirectional overrides can make a comment read differently from
+      // what it says, and zero-width characters can hide content entirely.
+      const text = raw.text
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+        .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, "")
       if (text.length === 0) return null
       textLength += text.length
       if (textLength > COMMENT_LIMITS.maxTextLength) {
