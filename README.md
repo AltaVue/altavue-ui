@@ -12,8 +12,11 @@ Contents:
 4. **`@comet/ui/finance`** — contract value and margin wording (AO-1999) — v0.3.0
 
 Items 3 and 4 are separate, React-free entry points. Importing them does not
-load the tooltip or comment-editor code, so an app that uses nothing else from
-this package (the Launcher) does not need `radix-ui` or TipTap.
+load the tooltip or comment-editor code, so none of it reaches the app's build
+output. npm still *installs* this package's dependencies (TipTap, and `radix-ui`
+as a peer), so an app that uses only these entry points (the Launcher) carries
+them in `node_modules` without shipping them. None of them have install
+scripts (checked for v0.3.0, AO-2005).
 
 > Plain version: this is the single home for the little help-tooltip components.
 > Each app still keeps its own help *text* (its `data/tooltip-glossary.json`);
