@@ -10,6 +10,14 @@ Contents:
 2. the **comments and @mentions** components — v0.2.0
 3. **`@comet/ui/dates`** — calendar days and moments in time (AO-2012) — v0.3.0
 4. **`@comet/ui/finance`** — contract value and margin wording (AO-1999) — v0.3.0
+5. **`@comet/ui/help`** — the tooltip help system on its own (item 1, without
+   the comment editor) — v0.3.1
+
+> **Import the tooltips from `@comet/ui/help`, not from `@comet/ui`.** The root
+> entry also carries the comment editor. In a webpack build, importing the root
+> entry from a client component ships the whole editor (~430 KB) to every page,
+> even if the module never shows a comment box — found in Agile during AO-2005.
+> Use the root entry only in a module that actually renders comments.
 
 Items 3 and 4 are separate, React-free entry points. Importing them does not
 load the tooltip or comment-editor code, so none of it reaches the app's build
@@ -59,7 +67,7 @@ scripts (checked for v0.3.0, AO-2005).
 
    ```tsx
    import glossary from '@/data/tooltip-glossary.json'
-   import { FieldHelpProvider, type FieldHelpEntry } from '@comet/ui'
+   import { FieldHelpProvider, type FieldHelpEntry } from '@comet/ui/help'
 
    <FieldHelpProvider glossary={glossary as FieldHelpEntry[]}>
      {children}
@@ -69,7 +77,7 @@ scripts (checked for v0.3.0, AO-2005).
 4. **Use the components** at any label/header:
 
    ```tsx
-   import { FieldLabel, FieldHelp } from '@comet/ui'
+   import { FieldLabel, FieldHelp } from '@comet/ui/help'
 
    <FieldLabel fieldId="user_story.story_points">Story Points</FieldLabel>
    <th><FieldHelp fieldId="budget_weekly_cost.variance">Variance</FieldHelp></th>
@@ -273,7 +281,7 @@ Every module pins a git tag (`#v0.3.0`), so each one updates on its own schedule
 Bump `version` in `package.json` and create the matching tag when you publish a
 change.
 
-Once AO-2005 has shipped: Vantage, Launcher and Agile on v0.3.0;
+Once AO-2005 has shipped: Vantage and Launcher on v0.3.0, Agile on v0.3.1;
 Estimation, Scheduler, Scope and Time on v0.1.0 with their own `lib/dates.ts`
 (identical to the shared copy). The Customer Portal does not use this package
 and keeps its own `src/lib/dates.ts`.

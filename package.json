@@ -1,8 +1,8 @@
 {
   "name": "@comet/ui",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
-  "description": "Shared internal code for the AltaVue platform — the field-level tooltip help system and the comments and @mentions components (root entry), plus two React-free entry points: @comet/ui/dates (calendar days and moments, AO-2012) and @comet/ui/finance (contract value and margin wording, AO-1999).",
+  "description": "Shared internal code for the AltaVue platform — the field-level tooltip help system and the comments and @mentions components (root entry), plus three entry points that load nothing else: @comet/ui/help (the tooltip help system alone), @comet/ui/dates (calendar days and moments, AO-2012) and @comet/ui/finance (contract value and margin wording, AO-1999).",
   "license": "UNLICENSED",
   "type": "module",
   "main": "./src/index.ts",
@@ -10,6 +10,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./help": "./src/help/index.ts",
     "./dates": "./src/dates/index.ts",
     "./finance": "./src/finance/index.ts",
     "./package.json": "./package.json"
