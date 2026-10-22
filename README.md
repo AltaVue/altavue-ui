@@ -8,6 +8,12 @@ Contents:
 1. the **field-level tooltip help system** (piloted in Tracker, packaged from
    Agile) — v0.1.0
 2. the **comments and @mentions** components — v0.2.0
+3. **`@comet/ui/dates`** — calendar days and moments in time (AO-2012) — v0.3.0
+4. **`@comet/ui/finance`** — contract value and margin wording (AO-1999) — v0.3.0
+
+Items 3 and 4 are separate, React-free entry points. Importing them does not
+load the tooltip or comment-editor code, so an app that uses nothing else from
+this package (the Launcher) does not need `radix-ui` or TipTap.
 
 > Plain version: this is the single home for the little help-tooltip components.
 > Each app still keeps its own help *text* (its `data/tooltip-glossary.json`);
@@ -188,6 +194,65 @@ On top of the tooltip contract above:
 
 Every current module defines these in `app/globals.css`.
 
+## Dates — `@comet/ui/dates` (v0.3.0, AO-2005)
+
+> Plain version: the one copy of the date rules that stop AltaVue showing a date
+> a day early for anyone outside UTC. It used to be copy-pasted, byte for byte,
+> into eight repos.
+
+The code was moved unchanged from the apps' `lib/dates.ts` (the long comment at
+the top of `src/dates/index.ts` explains calendar days versus moments). It has no
+React, browser or server dependency.
+
+What stays in each app: `lib/requestTimeZone.ts` (reads the time-zone cookie on
+the server) and the `useViewerTimeZone()` hook / `<LocalTime>` component. Those
+are tied to Next.js and React, so they are not shared.
+
+## Contract value and margin — `@comet/ui/finance` (v0.3.0, AO-2005)
+
+> Plain version: every sentence AltaVue shows about a project's contract value
+> and margin, written once, so Vantage, the Launcher and Agile can never say the
+> same number two different ways.
+
+Exports `CONTRACT_TYPES`, `ProjectFinancials`, `normaliseProjectFinancials` (raw
+`project_financials` row → typed, null-safe), `formatMoney`, and
+`contractSummary(financials, timeZone?, { budgetLocation? })`.
+
+`budgetLocation` is for an app with no Budget tab of its own — the Launcher
+passes the module name so the "create a cost budget" sentence tells the reader
+where to go. Leave it out where the Budget tab is on the same project.
+
+**What is deliberately not here:** reading the `project_financials` view and the
+`user_can_access_budget` permission check. Both need the app's own Supabase
+client, and this package has no database or auth dependency and must not
+acquire one (see "Why the components take data instead of fetching it" above).
+Each app keeps those two small functions in its own `lib/projectFinancials.ts`.
+
+## How an app adopts the dates and finance entry points
+
+Keep the app's existing file and turn it into a forwarder, so none of the
+app's imports change:
+
+```ts
+// lib/dates.ts
+export * from '@comet/ui/dates'
+```
+
+```ts
+// lib/projectFinancials.ts — shared wording + this app's own data access
+export * from '@comet/ui/finance'
+// ...then the app's fetchProjectFinancials() and canViewProjectMoney()
+```
+
+Never add logic to a forwarder. A change goes here, gets a new tag, and each app
+bumps to it.
+
+Run the tests after any change to either entry point:
+
+```
+npm test
+```
+
 ## Requirements
 
 Peer dependencies (already present in every module): `react` 19+,
@@ -201,7 +266,11 @@ keep `transpilePackages: ['@comet/ui']`.
 
 ## Versioning
 
-For now modules track `#main`. When a second module adopts the package, switch
-to git tags (`#v0.1.0`, `#v0.2.0`, …) so each module updates on its own schedule
-and nothing drifts unexpectedly. Bump `version` in `package.json` and create the
-matching tag when you publish a change.
+Every module pins a git tag (`#v0.3.0`), so each one updates on its own schedule.
+Bump `version` in `package.json` and create the matching tag when you publish a
+change.
+
+Once AO-2005 has shipped: Vantage, Launcher and Agile on v0.3.0;
+Estimation, Scheduler, Scope and Time on v0.1.0 with their own `lib/dates.ts`
+(identical to the shared copy). The Customer Portal does not use this package
+and keeps its own `src/lib/dates.ts`.
