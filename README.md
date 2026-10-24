@@ -13,9 +13,10 @@ Contents:
 5. **`@comet/ui/help`** — the tooltip help system on its own (item 1, without
    the comment editor) — v0.3.1
 6. **`@comet/ui/topbar`** — THE AltaVue top bar, and **`@comet/ui/verify`**,
-   the build check that keeps it from drifting (AO-2063) — v0.4.2 (v0.4.1: type file
+   the build check that keeps it from drifting (AO-2063) — v0.4.3 (v0.4.1: type file
    for `@comet/ui/verify`; v0.4.2: the bar stays pinned below the Dev/Staging
-   ribbon and the search box clears on a new page)
+   ribbon and the search box clears on a new page; v0.4.3: search hides results
+   that open in a module the person cannot open)
 
 > **Import the tooltips from `@comet/ui/help`, not from `@comet/ui`.** The root
 > entry also carries the comment editor. In a webpack build, importing the root
@@ -316,6 +317,16 @@ and keeps its own `src/lib/dates.ts`.
    `next build` (Vercel included) and `next dev`. The Drift Guard (altavue-auth)
    runs the same rules on GitHub, plus "pins the current version" and "the
    next.config call is present".
+
+### Search shows only what the person can open (v0.4.3)
+
+`comet_search` returns what the database lets the person read. A field seat
+(or a Core seat without the add-on seat for a module) can read the projects
+and tasks they are on — Time needs them — but cannot open Vantage, Agile or
+Scope. The bar therefore drops any result whose destination module is locked
+for them (`openableResults()` in `src/topbar/search.ts`, using the same module
+access the switcher shows). Display only: each module's guard still refuses on
+arrival. While access is loading or cannot be read, nothing is dropped.
 
 ### The connector
 

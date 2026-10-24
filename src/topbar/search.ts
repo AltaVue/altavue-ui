@@ -12,6 +12,7 @@
 // first, so a row can never inject anything into a link.
 
 import { toEnvUrl } from './env'
+import { accessState, isLocked, type ModuleAccessLike } from './access'
 
 export interface SearchResultRow {
   module: string
@@ -99,6 +100,37 @@ export function canonicalResultUrl(r: SearchResultRow): string | null {
 export function resultUrl(r: SearchResultRow): string | null {
   const u = canonicalResultUrl(r)
   return u ? toEnvUrl(u) : null
+}
+
+// v0.4.3 (AO-2063 security review, Michael 2026-10-24): results that open in a
+// module the person cannot open are not shown. comet_search returns what RLS
+// lets the person read — a field seat (or a Core seat without an add-on seat)
+// can read the projects and tasks they are on, because Time needs them — but
+// clicking one would only land on the "seat required" page. Display only: the
+// module's own guard still refuses on arrival, and nothing is hidden from the
+// database's point of view. While access is loading or unreadable, nothing is
+// dropped (the module's guard decides).
+const MODULE_BY_HOST: Record<string, string> = {
+  agile: 'agile',
+  tracker: 'tracker',
+  scope: 'scoping',
+  scheduler: 'scheduler',
+}
+
+/** The module (my_module_access key) a row opens in, or null if it has no safe target. */
+export function resultModuleKey(r: SearchResultRow): string | null {
+  const u = canonicalResultUrl(r)
+  if (!u) return null
+  const sub = new URL(u).hostname.split('.')[0]
+  return MODULE_BY_HOST[sub] ?? null
+}
+
+/** Rows whose destination module is not locked for this person. */
+export function openableResults(rows: SearchResultRow[], access: ModuleAccessLike | null | undefined): SearchResultRow[] {
+  return rows.filter((r) => {
+    const key = resultModuleKey(r)
+    return key !== null && !isLocked(accessState(key, access))
+  })
 }
 
 /** True for strings the search will send (mirrors comet_search's own floor). */

@@ -6,15 +6,21 @@
 // Ctrl+K / Cmd+K focuses it from anywhere on the page.
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { isSearchableQuery, resultUrl, SEARCH_ENTITY_LABELS, SEARCH_MODULE_LABELS, type SearchResultRow } from './search'
+import { isSearchableQuery, openableResults, resultUrl, SEARCH_ENTITY_LABELS, SEARCH_MODULE_LABELS, type SearchResultRow } from './search'
+import type { ModuleAccessLike } from './access'
 import { SearchIcon } from './icons'
 
 type Status = 'idle' | 'loading' | 'done' | 'error'
 interface Hit { row: SearchResultRow; url: string }
 
-export function SearchBox({ search, pathname }: { search: (q: string) => Promise<SearchResultRow[]>; pathname: string | null }) {
+export function SearchBox({ search, pathname, access }: { search: (q: string) => Promise<SearchResultRow[]>; pathname: string | null; access: ModuleAccessLike | null | undefined }) {
+  // Read at answer time, so access arriving after a query was typed still applies.
+  const accessRef = useRef(access)
+  accessRef.current = access
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<Hit[]>([])
+  // True when there were matches, but only in modules this person cannot open.
+  const [onlyLocked, setOnlyLocked] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -80,12 +86,15 @@ export function SearchBox({ search, pathname }: { search: (q: string) => Promise
       search(q)
         .then((rows) => {
           if (mine !== seq.current) return
+          const all = Array.isArray(rows) ? rows : []
+          const openable = openableResults(all, accessRef.current)
           const next: Hit[] = []
-          for (const row of Array.isArray(rows) ? rows : []) {
+          for (const row of openable) {
             const url = resultUrl(row)
             if (url) next.push({ row, url })
           }
           setHits(next)
+          setOnlyLocked(next.length === 0 && all.some((row) => resultUrl(row) !== null))
           setActive(0)
           setStatus('done')
         })
@@ -140,7 +149,11 @@ export function SearchBox({ search, pathname }: { search: (q: string) => Promise
         <div ref={panelRef} className="avtb-panel" style={{ top: pos.top, left: pos.left, width: pos.width, padding: 6 }}>
           {status === 'loading' && hits.length === 0 && <div className="avtb-msg">Searching…</div>}
           {status === 'error' && <div className="avtb-msg">Search is unavailable right now. Try again in a moment.</div>}
-          {status === 'done' && hits.length === 0 && <div className="avtb-msg">No matches in your company’s projects.</div>}
+          {status === 'done' && hits.length === 0 && (
+            <div className="avtb-msg">
+              {onlyLocked ? 'No matches in the modules you can open.' : 'No matches in your company’s projects.'}
+            </div>
+          )}
           {hits.length > 0 && (
             <div id={listId} role="listbox" aria-label="Search results">
               {hits.map((h, i) => (

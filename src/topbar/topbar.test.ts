@@ -7,7 +7,7 @@
  */
 import { envPrefixForHost, domainFamilyForHost, toEnvUrlForHost, portalOrigin, ribbonOffsetForHost } from './env'
 import { accessState, isLocked, refusalUrl } from './access'
-import { canonicalResultUrl, isSearchableQuery, type SearchResultRow } from './search'
+import { canonicalResultUrl, isSearchableQuery, openableResults, resultModuleKey, type SearchResultRow } from './search'
 import { groupReports, isSafeReportRoute, type ReportRow } from './reports'
 import { MODULE_BRANDS, SWITCHER_ENTRIES, isPlatformModuleKey, resolveModuleForPath } from './modules'
 
@@ -70,6 +70,22 @@ eq('waterfall project → Vantage', canonicalResultUrl(row({ entity_type: 'proje
 eq('scheduler activity', canonicalResultUrl(row({ entity_type: 'activity', module: 'scheduler' })), `https://scheduler.comet-app.com/schedule/${P}?focus=${P}`)
 eq('scope requirement', canonicalResultUrl(row({ entity_type: 'requirement', module: 'scope' })), `https://scope.comet-app.com/projects/${P}`)
 eq('no project → no link', canonicalResultUrl(row({ project_id: null })), null)
+
+console.log('\nSearch results the person can open (v0.4.3)')
+eq('module of agile item', resultModuleKey(row({})), 'agile')
+eq('module of waterfall project', resultModuleKey(row({ entity_type: 'project', methodology: 'waterfall' })), 'tracker')
+eq('module of scope requirement', resultModuleKey(row({ entity_type: 'requirement', module: 'scope' })), 'scoping')
+eq('module of scheduler baseline', resultModuleKey(row({ entity_type: 'baseline', module: 'scheduler' })), 'scheduler')
+eq('no target → no module', resultModuleKey(row({ project_id: null })), null)
+const mix = [row({}), row({ module: 'tracker' }), row({ entity_type: 'requirement', module: 'scope' }), row({ entity_type: 'baseline', module: 'scheduler' })]
+const field = { modules: { time: { allowed: true, reason: 'ok' }, agile: { allowed: false, reason: 'field_seat' }, tracker: { allowed: false, reason: 'field_seat' }, scoping: { allowed: false, reason: 'field_seat' }, scheduler: { allowed: false, reason: 'not_in_plan' } } }
+eq('field seat: nothing it cannot open', openableResults(mix, field).length, 0)
+const member = { modules: { agile: { allowed: false, reason: 'no_seat' }, tracker: { allowed: true, reason: 'ok' }, scoping: { allowed: true, reason: 'ok' }, scheduler: { allowed: true, reason: 'ok' } } }
+eq('Core seat without Agile seat: Agile dropped, rest kept', openableResults(mix, member).map(resultModuleKey), ['tracker', 'scoping', 'scheduler'])
+eq('access still loading: nothing dropped', openableResults(mix, undefined).length, 4)
+eq('access unreadable: nothing dropped', openableResults(mix, null).length, 4)
+eq('module missing from access: kept (guard decides)', openableResults([row({})], { modules: {} }).length, 1)
+eq('row with no safe link dropped', openableResults([row({ project_id: 'x' })], undefined).length, 0)
 eq('non-UUID project id → no link', canonicalResultUrl(row({ project_id: '../../evil' })), null)
 eq('injected entity id dropped from activity link', canonicalResultUrl(row({ entity_type: 'activity', entity_id: 'x"><script>' })), `https://scheduler.comet-app.com/schedule/${P}`)
 eq('negative item number → Vantage tasks', canonicalResultUrl(row({ entity_number: -1 })), `https://tracker.comet-app.com/dashboard/projects/${P}/tasks`)

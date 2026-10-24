@@ -46,7 +46,7 @@ export function PlatformTopBar(props: PlatformTopBarProps) {
         </div>
         <div className="avtb-middle">
           <ReportsMenu reports={props.reports} inHome={inHome} />
-          <SearchBox search={props.search} pathname={props.pathname} />
+          <SearchBox search={props.search} pathname={props.pathname} access={props.moduleAccess} />
         </div>
         <div className="avtb-right">
           <button
