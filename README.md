@@ -12,6 +12,8 @@ Contents:
 4. **`@comet/ui/finance`** — contract value and margin wording (AO-1999) — v0.3.0
 5. **`@comet/ui/help`** — the tooltip help system on its own (item 1, without
    the comment editor) — v0.3.1
+6. **`@comet/ui/topbar`** — THE AltaVue top bar, and **`@comet/ui/verify`**,
+   the build check that keeps it from drifting (AO-2063) — v0.4.0
 
 > **Import the tooltips from `@comet/ui/help`, not from `@comet/ui`.** The root
 > entry also carries the comment editor. In a webpack build, importing the root
@@ -285,3 +287,72 @@ Once AO-2005 has shipped: Vantage and Launcher on v0.3.0, Agile on v0.3.1;
 Estimation, Scheduler, Scope and Time on v0.1.0 with their own `lib/dates.ts`
 (identical to the shared copy). The Customer Portal does not use this package
 and keeps its own `src/lib/dates.ts`.
+
+## The platform top bar — `@comet/ui/topbar` (AO-2063, v0.4.0)
+
+> Plain version: there is exactly one top bar in AltaVue, and it lives here.
+> Every signed-in page in all eight apps shows it — app switcher, module name,
+> global reports, global search, help, profile avatar. No app can change it,
+> leave a piece out, or keep its own copy: the build fails if one tries.
+
+### The three layers
+
+1. **One copy, no options.** `PlatformTopBar` takes the module and the data it
+   shows, and nothing else — no slots, no style props, no optional pieces. The
+   module registry, app switcher, reports menu, search, help button, avatar
+   menu, link rules and styling are all in `src/topbar/`. Styling is plain CSS
+   shipped with the component (an app's Tailwind does not scan this package).
+   **No database or auth code here** (shared package rule 1): the bar is
+   display-only.
+2. **One spot per app.** Each app renders the bar once, in
+   `app/(app)/layout.tsx`, through `components/PlatformTopBarConnector.tsx`.
+   Every signed-in page lives under `app/(app)/`. Route groups do not change
+   URLs. The only pages allowed outside are listed per module in
+   `PUBLIC_PAGES` in `bin/verify.mjs` — adding one needs a release.
+3. **A check that blocks the build.** Each app's `next.config.ts` calls
+   `verifyPlatformTopBar()` from `@comet/ui/verify`; it runs on every
+   `next build` (Vercel included) and `next dev`. The Drift Guard (altavue-auth)
+   runs the same rules on GitHub, plus "pins the current version" and "the
+   next.config call is present".
+
+### The connector
+
+`connector/PlatformTopBarConnector.tsx` is copied **byte for byte** into every
+app at `components/PlatformTopBarConnector.tsx` (line endings are ignored). It
+reads the signed-in person, `getModuleAccess()`, the `report_registry` list and
+`comet_search` through the app's own `@altavue/auth` client, and passes them
+in. Sign out is the call every app already used: `signOut()` then `/login`.
+The module comes from a two-line `lib/platformModule.ts`:
+
+```ts
+import type { PlatformModuleKey } from '@comet/ui/topbar'
+export const PLATFORM_MODULE: PlatformModuleKey = 'agile'
+```
+
+Keys: `dashboard` (Launcher — shows SUPER ADMIN under `/super-admin`),
+`scoping`, `estimation`, `tracker` (Vantage), `agile`, `scheduler`, `time`,
+`stakeholders`. The Customer Portal is not covered — it is a separate
+customer site with its own header.
+
+### What the build check fails on
+
+- `lib/platformModule.ts` missing or not exactly the two-line form.
+- The connector missing or different from the canonical copy.
+- `app/(app)/layout.tsx` missing or not rendering `<PlatformTopBarConnector />`.
+- A `page.tsx` outside `app/(app)/` that is not on the module's public list
+  (or a public page placed inside it).
+- A file named `TopBar`, `AppSwitcher`, `ReportsDropdown`, `GlobalSearch`,
+  `AppHeaderActions` or `NavHeader`, or any import of one.
+- Anything other than the connector importing `@comet/ui/topbar`.
+- `@comet/ui` not pinned as `github:AltaVue/altavue-ui#vX.Y.Z`, or a different
+  version installed than the one pinned.
+
+Run it by hand: `npx comet-ui-verify` in an app folder.
+
+### Changing the top bar
+
+Change it here, tag a new version, and move **all eight apps up together**
+(the Drift Guard fails any app left behind). Never edit the connector inside an
+app. Links: module links follow the host the page is on (dev / staging /
+production, altavue-app.com or comet-app.com); the Portal is always production
+(AO-1918). Tests: `npm test` (`src/topbar/topbar.test.ts`, `bin/verify.test.mjs`).
