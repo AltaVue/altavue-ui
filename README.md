@@ -13,7 +13,8 @@ Contents:
 5. **`@comet/ui/help`** — the tooltip help system on its own (item 1, without
    the comment editor) — v0.3.1
 6. **`@comet/ui/topbar`** — THE AltaVue top bar, and **`@comet/ui/verify`**,
-   the build check that keeps it from drifting (AO-2063) — v0.4.0
+   the build check that keeps it from drifting (AO-2063) — v0.4.1 (v0.4.0 lacked
+   the type file for `@comet/ui/verify`; never used by an app)
 
 > **Import the tooltips from `@comet/ui/help`, not from `@comet/ui`.** The root
 > entry also carries the comment editor. In a webpack build, importing the root

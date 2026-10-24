@@ -1,6 +1,6 @@
 {
   "name": "@comet/ui",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Shared internal code for the AltaVue platform — the field-level tooltip help system and the comments and @mentions components (root entry), plus entry points that load nothing else: @comet/ui/help (tooltips alone), @comet/ui/dates (AO-2012), @comet/ui/finance (AO-1999), @comet/ui/topbar (THE platform top bar, AO-2063) and @comet/ui/verify (the build-time top-bar drift check, AO-2063).",
   "license": "UNLICENSED",
@@ -14,7 +14,10 @@
     "./dates": "./src/dates/index.ts",
     "./finance": "./src/finance/index.ts",
     "./topbar": "./src/topbar/index.ts",
-    "./verify": "./bin/verify.mjs",
+    "./verify": {
+      "types": "./bin/verify.d.mts",
+      "default": "./bin/verify.mjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [

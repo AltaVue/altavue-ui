@@ -5,6 +5,7 @@ import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import * as verifyModule from './verify.mjs'
 import { checkPlatformTopBar, installedVersion } from './verify.mjs'
 
 const PKG = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -38,6 +39,13 @@ function run(name, mutate, expectFragment) {
   } finally { rmSync(root, { recursive: true, force: true }) }
 }
 
+{
+  const declared = [...readFileSync(join(PKG, 'bin', 'verify.d.mts'), 'utf8').matchAll(/export declare (?:const|function) (\w+)/g)].map((m) => m[1]).sort()
+  const actual = Object.keys(verifyModule).sort()
+  check('verify.d.mts declares exactly what verify.mjs exports', JSON.stringify(declared) === JSON.stringify(actual), { declared, actual })
+  const pkg = JSON.parse(readFileSync(join(PKG, 'package.json'), 'utf8'))
+  check('package exports ./verify with types', pkg.exports['./verify']?.types === './bin/verify.d.mts' && pkg.exports['./verify']?.default === './bin/verify.mjs')
+}
 run('clean app passes', () => {}, null)
 run('CRLF connector still passes', (r) => { const p = join(r, 'components/PlatformTopBarConnector.tsx'); writeFileSync(p, readFileSync(p, 'utf8').replace(/\n/g, '\r\n')) }, null)
 run('signed-in page outside (app) fails', (r) => put(r, 'app/kanban/page.tsx', 'x'), 'app/kanban/page.tsx has no top bar')
