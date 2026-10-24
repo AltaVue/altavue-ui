@@ -14,7 +14,7 @@ export const GOLD_BRIGHT = '#D4AF37'
 const FONT = 'var(--font-sans, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif)'
 
 export const TOPBAR_CSS = `
-.avtb-bar{position:relative;z-index:30;display:flex;align-items:center;height:64px;flex-shrink:0;width:100%;box-sizing:border-box;
+.avtb-bar{position:sticky;top:0;z-index:50;display:flex;align-items:center;height:64px;flex-shrink:0;width:100%;box-sizing:border-box;
   background:linear-gradient(100deg,#0a1628 0%,#0c1b32 55%,#091322 100%);border-bottom:1px solid rgba(96,165,250,0.25);
   box-shadow:0 6px 24px -16px rgba(0,0,0,0.6);font-family:${FONT};color:#fff}
 .avtb-bar *{box-sizing:border-box}

@@ -5,7 +5,7 @@
  *
  * Run with:  npx tsx src/topbar/topbar.test.ts
  */
-import { envPrefixForHost, domainFamilyForHost, toEnvUrlForHost, portalOrigin } from './env'
+import { envPrefixForHost, domainFamilyForHost, toEnvUrlForHost, portalOrigin, ribbonOffsetForHost } from './env'
 import { accessState, isLocked, refusalUrl } from './access'
 import { canonicalResultUrl, isSearchableQuery, type SearchResultRow } from './search'
 import { groupReports, isSafeReportRoute, type ReportRow } from './reports'
@@ -32,6 +32,10 @@ eq('lookalike host is not dev', envPrefixForHost('agile.dev.altavue-app.com.evil
 eq('lookalike host family', domainFamilyForHost('altavue-app.com.evil.com'), 'comet-app.com')
 eq('non-canonical URL untouched', toEnvUrlForHost('https://evil.com/.comet-app.com', 'agile.dev.altavue-app.com'), 'https://evil.com/.comet-app.com')
 eq('Portal is always production', portalOrigin(), 'https://portal.altavue-app.com')
+eq('bar pins below the Dev ribbon', ribbonOffsetForHost('estimate.dev.altavue-app.com'), 28)
+eq('bar pins below the Staging ribbon', ribbonOffsetForHost('time.staging.comet-app.com'), 28)
+eq('bar pins at the top in Production', ribbonOffsetForHost('agile.altavue-app.com'), 0)
+eq('bar pins at the top on localhost', ribbonOffsetForHost('localhost'), 0)
 check('switcher Portal entry is not an env-rewritable URL', SWITCHER_ENTRIES.find((e) => e.id === 'portal')?.url === 'portal')
 
 console.log('\nModule access')

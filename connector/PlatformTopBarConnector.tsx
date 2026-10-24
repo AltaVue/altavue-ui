@@ -101,6 +101,7 @@ export default function PlatformTopBarConnector() {
   return (
     <PlatformTopBar
       module={resolveModuleForPath(PLATFORM_MODULE, pathname)}
+      pathname={pathname}
       user={user}
       moduleAccess={access}
       reports={reports}

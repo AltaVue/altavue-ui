@@ -60,5 +60,17 @@ export function toEnvUrl(url: string): string {
   return toEnvUrlForHost(url, host)
 }
 
+/**
+ * Height of the platform's environment ribbon (each app's DevEnvBanner: a 28px
+ * strip fixed to the top of the window on Dev and Staging, absent in
+ * Production). The top bar stays pinned just below it.
+ */
+export const ENV_RIBBON_HEIGHT = 28
+
+/** How far below the top of the window the bar pins itself on this host. */
+export function ribbonOffsetForHost(host: string | null | undefined): number {
+  return envPrefixForHost(host) ? ENV_RIBBON_HEIGHT : 0
+}
+
 /** Home (Launcher) — the refusal pages, profile and reports live there. */
 export const LAUNCHER_URL = 'https://app.comet-app.com'

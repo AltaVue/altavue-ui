@@ -13,6 +13,8 @@ export interface TopBarUser {
 
 export interface PlatformTopBarProps {
   module: PlatformModuleKey
+  /** The current page path. The search box clears when it changes. */
+  pathname: string | null
   /** undefined while loading. */
   user: TopBarUser | null | undefined
   /** undefined while loading, null when it could not be read. */

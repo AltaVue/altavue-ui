@@ -12,7 +12,7 @@ import { SearchIcon } from './icons'
 type Status = 'idle' | 'loading' | 'done' | 'error'
 interface Hit { row: SearchResultRow; url: string }
 
-export function SearchBox({ search }: { search: (q: string) => Promise<SearchResultRow[]> }) {
+export function SearchBox({ search, pathname }: { search: (q: string) => Promise<SearchResultRow[]>; pathname: string | null }) {
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<Hit[]>([])
   const [status, setStatus] = useState<Status>('idle')
@@ -29,6 +29,16 @@ export function SearchBox({ search }: { search: (q: string) => Promise<SearchRes
     const r = wrapRef.current?.getBoundingClientRect()
     if (r) setPos({ top: r.bottom + 6, left: r.left, width: Math.max(r.width, 360) })
   }
+
+  // A new page starts with an empty search box (the bar itself stays mounted
+  // across pages, so without this the last query would follow the person).
+  useEffect(() => {
+    seq.current++
+    setQuery('')
+    setHits([])
+    setStatus('idle')
+    setOpen(false)
+  }, [pathname])
 
   // Ctrl+K / Cmd+K
   useEffect(() => {
