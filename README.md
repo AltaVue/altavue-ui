@@ -17,7 +17,7 @@ Contents:
    for `@comet/ui/verify`; v0.4.2: the bar stays pinned below the Dev/Staging
    ribbon and the search box clears on a new page; v0.4.3: search hides results
    that open in a module the person cannot open)
-7. **`@comet/ui/units`** and **`@comet/ui/units/select`** — the one AltaVue unit list and its dropdown (AO-993) — v0.5.0
+7. **`@comet/ui/units`** and **`@comet/ui/units/select`** — the one AltaVue unit list and its dropdown (AO-993) — v0.5.1
 
 > **Import the tooltips from `@comet/ui/help`, not from `@comet/ui`.** The root
 > entry also carries the comment editor. In a webpack build, importing the root
@@ -106,7 +106,7 @@ standard COMET aurora-glass tokens):
 Every current module defines these in `app/globals.css`.
 
 
-## Units of measure (v0.5.0, AO-993)
+## Units of measure (v0.5.1, AO-993)
 
 AltaVue has **one** list of units of measure for the whole platform — 243 units loaded from Saber's Universal Unit of
 Measure workbook into two database tables, `unit_catalog` and `unit_aliases`. Customers read it; only Saber changes it,
@@ -136,7 +136,7 @@ import { UnitListProvider, UnitSelect, UnitLabel } from '@comet/ui/units/select'
 What the dropdown does: shows the Core units grouped by category; "Show all units" adds the Extended ones; typing
 finds a unit by code, symbol, name or a known spelling ("hrs", "sq ft", "cu yd") and also looks at Extended units;
 the specification/utility units (pressure, voltage …) are never offered in quantity menus; a definition strip shows
-what the highlighted unit means; the **code** is stored (`FT2`), the **symbol** is shown (`ft²`).
+what the highlighted unit means; the **code** is stored (`FT2`). Each row in the list, and the closed dropdown, shows the unit's **name** once ("Square foot"); its code, symbol and meaning are in the hover text and the strip at the bottom of the list. Read-only labels in tables show the **symbol** (`ft²`). (v0.5.1: rows previously repeated symbol, name and code.)
 
 A stored value nobody can safely convert (old free text such as `NIGHT`, or an ambiguous `TON`) shows a
 **"Needs a unit"** flag on screen with the old text beside it. Nothing is ever written into the field for that — it is

@@ -74,9 +74,7 @@ const CSS = `
 .aus-opt{display:flex;align-items:baseline;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1.3}
 .aus-opt[data-active="true"]{background:#f3f6fb}
 .aus-opt[aria-selected="true"]{background:#eef3fc;box-shadow:inset 3px 0 0 ${GOLD}}
-.aus-opt .aus-osym{min-width:44px;font-weight:600}
 .aus-opt .aus-oname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.aus-opt .aus-ocode{flex-shrink:0;font-size:11px;color:#9ca3af;font-variant-numeric:tabular-nums}
 .aus-ext{flex-shrink:0;font-size:10px;color:#6b7280;border:1px solid #d1d5db;border-radius:4px;padding:0 4px}
 .aus-none{font-style:italic;color:#6b7280}
 .aus-empty{padding:18px 12px;text-align:center;font-size:13px;color:#6b7280;line-height:1.45}
@@ -357,8 +355,7 @@ export function UnitSelect(props: UnitSelectProps) {
   } else {
     shown = (
       <>
-        <span className="aus-sym">{unitShort(resolution.unit)}</span>
-        <span className="aus-name"> · {resolution.unit.name}</span>
+        <span className="aus-sym">{resolution.unit.name}</span>
       </>
     )
     hover = unitHover(resolution.unit)
@@ -408,7 +405,6 @@ export function UnitSelect(props: UnitSelectProps) {
                 onMouseMove={() => active !== 0 && setActive(0)}
                 onClick={() => choose(opts[0])}
               >
-                <span className="aus-osym aus-none">—</span>
                 <span className="aus-oname aus-none">No unit</span>
               </div>
             )}
@@ -506,11 +502,10 @@ function OptionRow(props: { uid: string; index: number; u: UnitRow; active: bool
       className="aus-opt"
       onMouseMove={() => !active && onHover(index)}
       onClick={onPick}
+      title={unitHover(u)}
     >
-      <span className="aus-osym">{unitShort(u)}</span>
       <span className="aus-oname">{u.name}{showCategory ? <span style={{ color: '#9ca3af' }}> · {u.category}</span> : null}</span>
       {u.availability === 'extended' ? <span className="aus-ext">Extended</span> : null}
-      <span className="aus-ocode">{u.code}</span>
     </div>
   )
 }
