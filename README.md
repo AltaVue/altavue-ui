@@ -17,6 +17,7 @@ Contents:
    for `@comet/ui/verify`; v0.4.2: the bar stays pinned below the Dev/Staging
    ribbon and the search box clears on a new page; v0.4.3: search hides results
    that open in a module the person cannot open)
+7. **`@comet/ui/units`** and **`@comet/ui/units/select`** — the one AltaVue unit list and its dropdown (AO-993) — v0.5.0
 
 > **Import the tooltips from `@comet/ui/help`, not from `@comet/ui`.** The root
 > entry also carries the comment editor. In a webpack build, importing the root
@@ -103,6 +104,54 @@ standard COMET aurora-glass tokens):
 - `--color-accent` — the keyboard focus ring (gold)
 
 Every current module defines these in `app/globals.css`.
+
+
+## Units of measure (v0.5.0, AO-993)
+
+AltaVue has **one** list of units of measure for the whole platform — 243 units loaded from Saber's Universal Unit of
+Measure workbook into two database tables, `unit_catalog` and `unit_aliases`. Customers read it; only Saber changes it,
+by migration. This package is the one shared way to use that list on a screen.
+
+> Plain version: every module shows the same unit dropdown, with the same names, the same symbols and the same
+> hover definitions. Fix or improve it here once and every module gets it.
+
+Two entry points:
+
+- **`@comet/ui/units`** — plain logic, no React: `resolveUnit` (what does a stored value mean?), `searchUnits`,
+  `unitsForMenu`, `groupUnits`, `cleanUnitRows`, `cleanAliasRows`, and the column lists `UNIT_COLUMNS` / `ALIAS_COLUMNS`.
+  Safe in a server component, a server action or a test.
+- **`@comet/ui/units/select`** — the screen pieces: `UnitSelect` (the dropdown), `UnitLabel` (a unit inside a table or
+  sentence, with the meaning on hover) and `UnitListProvider` / `useUnitList` (read the list once per page).
+
+```tsx
+import { UnitListProvider, UnitSelect, UnitLabel } from '@comet/ui/units/select'
+
+<UnitListProvider client={supabase}>        {/* reads the list once, shared by everything below */}
+  <UnitSelect value={line.unit} onChange={(code) => setLine({ ...line, unit: code })} ariaLabel="Unit" />
+  ...
+  <td><UnitLabel value={line.unit} /></td>   {/* "hr", hover: "Hour (HR) — ..." */}
+</UnitListProvider>
+```
+
+What the dropdown does: shows the Core units grouped by category; "Show all units" adds the Extended ones; typing
+finds a unit by code, symbol, name or a known spelling ("hrs", "sq ft", "cu yd") and also looks at Extended units;
+the specification/utility units (pressure, voltage …) are never offered in quantity menus; a definition strip shows
+what the highlighted unit means; the **code** is stored (`FT2`), the **symbol** is shown (`ft²`).
+
+A stored value nobody can safely convert (old free text such as `NIGHT`, or an ambiguous `TON`) shows a
+**"Needs a unit"** flag on screen with the old text beside it. Nothing is ever written into the field for that — it is
+only a flag, and choosing a unit replaces it.
+
+**The matching rules mirror the database function `unit_normalize()`** (exact code, then a known spelling that is safe to
+convert, then a code in another case, then the unit's name). `src/units/units.test.ts` holds answers taken from the
+database itself. If you change the matching rule on either side, change both and run the test.
+
+Like the comment components, this package has no database dependency: `useUnitList` takes the app's own Supabase client
+and only calls `from('unit_catalog').select(...)` and `from('unit_aliases').select(...)` on it. The unit tables are
+readable by any signed-in user with a full or field seat.
+
+Styling is self-contained (one `<style href="aus-units-v1">` that React 19 puts in the page head once), so the control
+looks right in every module without Tailwind scanning this package.
 
 
 ## Comments and @mentions (v0.2.0)
